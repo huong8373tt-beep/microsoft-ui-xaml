@@ -1020,6 +1020,7 @@ void TableView::PrepareGroupHeaderElement(winrt::TableViewGroupHeader const& hea
         headerImpl->RaiseExpandCollapseStateChanged(previousState, newState);
     }
 
+    ApplyGroupHeaderStyleSelector(header);
     UpdateGroupHeaderWidth(header);
 }
 
