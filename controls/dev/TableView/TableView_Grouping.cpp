@@ -930,6 +930,11 @@ void TableView::PrepareGroupHeaderElement(winrt::TableViewGroupHeader const& hea
     if (!groupRow)
     {
         groupRow = header.DataContext();
+        if (groupRow && groupRow.try_as<winrt::TableViewGroupInfo>())
+        {
+            // Already prepared once: DataContext is the projection set below, not the entry.
+            groupRow = headerImpl->GroupEntryInternal();
+        }
     }
 
     if (auto const entry = TryGetGroupedEntry(groupRow))
@@ -1015,6 +1020,15 @@ void TableView::PrepareGroupHeaderElement(winrt::TableViewGroupHeader const& hea
     header.IsExpandable(isExpandable);
     header.IsExpanded(isExpanded);
 
+    // Expose the projection as the header's DataContext, as a data row exposes its item, so
+    // bindings in a group header Style and in its ContextFlyout (the flyout takes its target's
+    // DataContext) see TableViewGroupInfo rather than the internal projection entry.
+    headerImpl->SetGroupEntryInternal(groupRow);
+    if (auto const info = header.Content(); header.DataContext() != info)
+    {
+        header.DataContext(info);
+    }
+
     if (sameGroup && previousState != newState)
     {
         headerImpl->RaiseExpandCollapseStateChanged(previousState, newState);
@@ -1092,6 +1106,7 @@ void TableView::ClearGroupHeaderElement(winrt::TableViewGroupHeader const& heade
     // turns those into silent no-ops, which is worse than the ancestor walk it replaced. A weak
     // ref costs nothing to keep and stays correct.
     header.ClearValue(winrt::ContentControl::ContentTemplateProperty());
+    winrt::get_self<TableViewGroupHeader>(header)->SetGroupEntryInternal(nullptr);
 }
 
 void TableView::UpdateGroupHeaderWidth(winrt::TableViewGroupHeader const& header)
