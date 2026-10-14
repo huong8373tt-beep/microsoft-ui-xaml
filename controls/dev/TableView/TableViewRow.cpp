@@ -360,8 +360,8 @@ bool TableViewRow::IsContextMenuTargetCurrent(
         return target.Anchor == target.Row;
     }
 
-    return target.Column.Visibility() == winrt::Visibility::Visible &&
-        target.Anchor.Visibility() == winrt::Visibility::Visible &&
+    // The column itself is validated by TableView::IsContextMenuTargetCurrent, the only caller.
+    return target.Anchor.Visibility() == winrt::Visibility::Visible &&
         TableViewCellsPanel::CellForColumn(target.ScopeRoot, target.Column) == target.Anchor &&
         winrt::VisualTreeHelper::GetParent(target.Anchor) == target.ScopeRoot;
 }
@@ -2587,8 +2587,7 @@ void TableViewRow::ProcessContextRequest(
         return;
     }
 
-    auto const result = winrt::get_self<TableView>(owner)->ProcessContextMenuRequest(target, args);
-    if (result != TableViewDetails::ContextMenuResult::Unhandled)
+    if (winrt::get_self<TableView>(owner)->ProcessContextMenuRequest(target, args))
     {
         args.Handled(true);
     }
@@ -2635,8 +2634,7 @@ bool TableViewRow::ShowContextMenuFromPeer()
         return false;
     }
 
-    return winrt::get_self<TableView>(owner)->ProcessContextMenuRequest(*target, nullptr) !=
-        TableViewDetails::ContextMenuResult::Unhandled;
+    return winrt::get_self<TableView>(owner)->ProcessContextMenuRequest(*target, nullptr);
 }
 
 std::optional<TableViewDetails::ContextMenuTarget> TableViewRow::MakeRowContextMenuTarget()
@@ -2692,11 +2690,7 @@ std::optional<TableViewDetails::ContextMenuTarget> TableViewRow::ResolveContextM
     // belongs to the row.
     auto const cell = FindOwnCellInternal(source, false /* requireExact */);
     auto column = cell ? GetCellOwningColumn(cell) : nullptr;
-    auto const owner = GetOwningTableView();
-    uint32_t index{};
-    if (column && (column.Visibility() != winrt::Visibility::Visible ||
-        winrt::get_self<TableViewColumn>(column)->GetOwningTableView() != owner ||
-        !owner.Columns().IndexOf(column, index)))
+    if (column && !winrt::get_self<TableView>(GetOwningTableView())->IsContextMenuColumn(column))
     {
         column = nullptr;
     }
