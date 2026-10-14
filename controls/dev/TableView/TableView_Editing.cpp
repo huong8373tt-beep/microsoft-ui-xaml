@@ -507,6 +507,8 @@ void TableView::EndEditVisual(winrt::TableViewEditAction action)
         }
     }
     m_currentEditRow.set(nullptr);
+    m_editorFlyoutClosedRevoker.revoke();
+    m_editorFlyoutClosingRevoker.revoke();
 }
 
 bool TableView::TerminateEditWithoutVisualRestore(bool insideLayoutPass)
